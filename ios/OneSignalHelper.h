@@ -46,7 +46,7 @@
 + (void)handleNotificationOpened:(NSDictionary*)messageDict
                         isActive:(BOOL)isActive
                       actionType:(OSNotificationActionType)actionType
-                     displayType:(OSNotificationDisplayType)displayType;
+                     displayType:(int)displayType;
 
 + (BOOL)remoteSilentNotification:(UIApplication*)application UserInfo:(NSDictionary*)userInfo completionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
 

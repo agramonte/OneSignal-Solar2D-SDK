@@ -34,11 +34,11 @@
 static BOOL coronaInitDone = false;
 static BOOL autoRegister = true;
 
-NSString* CreateNSString(const char* string) {
+static NSString* CreateNSString(const char* string) {
     return [NSString stringWithUTF8String: string ? string : ""];
 }
 
-const char* dictionaryToJsonChar(NSDictionary* dictionaryToConvert) {
+static const char* dictionaryToJsonChar(NSDictionary* dictionaryToConvert) {
     NSData* jsonData = [NSJSONSerialization dataWithJSONObject:dictionaryToConvert options:0 error:nil];
     NSString* jsonRequestData = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
@@ -95,6 +95,7 @@ public:
     static int setSubscription(lua_State* L);
     static int postNotification(lua_State* L);
     static int setEmail(lua_State* L);
+    static int setExternalUserId(lua_State* L);
     static int promptLocation(lua_State* L);
     static int clearAllNotifications(lua_State* L);
     static int setInAppMessageClickHandler(lua_State* L);
@@ -116,7 +117,8 @@ int OneSignalLibrary::getTagsCallbackIndex,
     OneSignalLibrary::getTriggerValueForKeyCallbackIndex;
 
 int OneSignalLibrary::notificationOpenCallbackIndex = -1;
-int OneSignalLibrary::postNotificationOnSuccessIndex = -1, OneSignalLibrary::postNotificationOnFailureIndex = -1;
+int OneSignalLibrary::postNotificationOnSuccessIndex = -1;
+int OneSignalLibrary::postNotificationOnFailureIndex = -1;
 int OneSignalLibrary::inAppMessageClickCallbackIndex;
 
 lua_State* OneSignalLibrary::lua_state;
@@ -145,6 +147,7 @@ int OneSignalLibrary::Open(lua_State* L) {
         { "setSubscription", setSubscription },
         { "postNotification", postNotification },
         { "setEmail", setEmail },
+        { "setExternalUserId", setExternalUserId},
         { "promptLocation", promptLocation },
         { "clearAllNotifications", clearAllNotifications},
         { "setInAppMessageClickHandler", setInAppMessageClickHandler},
@@ -167,7 +170,7 @@ int OneSignalLibrary::Open(lua_State* L) {
 }
 
 int OneSignalLibrary::Finalizer(lua_State* L) {
-    Self* library = (Self*)CoronaLuaToUserdata(L, 1 );
+    //Self* library = (Self*)CoronaLuaToUserdata(L, 1 );
     // TODO: Do we need to clean up at all?
 
     return 0;
@@ -187,9 +190,12 @@ int OneSignalLibrary::disableAutoRegister(lua_State* L) {
 }
 
 int OneSignalLibrary::registerForNotifications(lua_State* L) {
-    [OneSignal registerForPushNotifications];
+    [OneSignal promptForPushNotificationsWithUserResponse:^(BOOL accepted) {
+        // Optionally handle user response here
+    }];
     return 0;
 }
+
 
 // [Lua] library.init( listener )
 int OneSignalLibrary::init(lua_State* L) {
@@ -243,40 +249,52 @@ int OneSignalLibrary::getTags(lua_State* L) {
 }
 
 int OneSignalLibrary::idsAvailable(lua_State* L) {
-    idsAvailableCallbackIndex = lua_ref(L, LUA_REGISTRYINDEX);
+    idsAvailableCallbackIndex = lua_ref(L, LUA_REGISTRYINDEX); 
 
-    [OneSignal IdsAvailable:^(NSString* userId, NSString* pushToken) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            lua_State* L = lua_state;
-            lua_rawgeti(L, LUA_REGISTRYINDEX, idsAvailableCallbackIndex);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        OSDeviceState *deviceState = [OneSignal getDeviceState];
+        NSString *userId = deviceState.userId;
+        NSString *pushToken = deviceState.pushToken;
 
+        lua_State* L = lua_state;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, idsAvailableCallbackIndex);
+
+        if (userId != nil)
             lua_pushstring(L, [userId UTF8String]);
+        else
+            lua_pushnil(L);
 
-            if (pushToken != nil)
-                lua_pushstring(L, [pushToken UTF8String]);
-            else
-                lua_pushnil(L);
+        if (pushToken != nil)
+            lua_pushstring(L, [pushToken UTF8String]);
+        else
+            lua_pushnil(L);
 
-            lua_pcall(L, 2, 0, 0);
-        });
-    }];
+        lua_pcall(L, 2, 0, 0);
+    });
 
     return 0;
 }
 
 int OneSignalLibrary::setLogLevel(lua_State* L) {
     NSLog(@"Corona setLogLevel");
-    [OneSignal setLogLevel:luaL_checkinteger(L, 1) visualLevel:luaL_checkinteger(L, 2)];
+    [OneSignal setLogLevel:(ONE_S_LOG_LEVEL)luaL_checkinteger(L, 1) visualLevel:(ONE_S_LOG_LEVEL)luaL_checkinteger(L, 2)];
     return 0;
 }
 
+
+// Static variable to control foreground notification display
+static BOOL showForegroundNotificationAlert = YES;
+
 int OneSignalLibrary::enableInAppAlertNotification(lua_State* L) {
-    [OneSignal enableInAppAlertNotification:lua_toboolean(L, 1)];
+    showForegroundNotificationAlert = lua_toboolean(L, 1);
     return 0;
 }
 
 int OneSignalLibrary::setSubscription(lua_State* L) {
-    [OneSignal setSubscription:lua_toboolean(L, 1)];
+    // Old: [OneSignal setSubscription:lua_toboolean(L, 1)];
+    // New: [OneSignal disablePush:!lua_toboolean(L, 1)];
+    // true (subscribe) => disablePush:NO, false (unsubscribe) => disablePush:YES
+    [OneSignal disablePush:!lua_toboolean(L, 1)];
     return 0;
 }
 
@@ -329,6 +347,13 @@ int OneSignalLibrary::setEmail(lua_State* L) {
     const char* emailChar = luaL_checkstring(L, 1);
     NSString* emailStr = CreateNSString(emailChar);
     [OneSignal setEmail:emailStr];
+    return 0;
+}
+
+int OneSignalLibrary::setExternalUserId(lua_State* L) {
+    const char* externalUserId = luaL_checkstring(L, 1);
+    NSString* externalUserIdStr = CreateNSString(externalUserId);
+    [OneSignal setExternalUserId:externalUserIdStr];
     return 0;
 }
 
@@ -444,6 +469,7 @@ int OneSignalLibrary::pauseInAppMessages(lua_State* L) {
     return 0;
 }
 
+
 // ----------------------------------------------------------------------------
 
 CORONA_EXPORT int luaopen_OneSignal(lua_State* L) {
@@ -458,22 +484,18 @@ static NSString* mAlertMessage;
 static NSDictionary* mAdditionalData;
 static BOOL mIsActive;
 
+// Set up the foreground notification handler after OneSignal initialization
 void initOneSignalObject(NSDictionary* launchOptions, const char* appId, BOOL autoRegister) {
     NSString* appIdStr = (appId ? [NSString stringWithUTF8String: appId] : nil);
 
-    [OneSignal setValue:@"corona" forKey:@"mSDKType"];
+    [OneSignal setMSDKType:@"Corona-Unoffical"];
+    [OneSignal setAppId:appIdStr];
+    [OneSignal initWithLaunchOptions:launchOptions];
     
-    [OneSignal initWithLaunchOptions:launchOptions appId:appIdStr handleNotificationAction:^(OSNotificationOpenedResult *result) {
-        // Need to deep copy as we will be going across threads.
-        mAlertMessage = [result.notification.payload.body copy];
-        mAdditionalData = [[NSDictionary alloc] initWithDictionary:result.notification.payload.additionalData copyItems:YES];
-        mIsActive = result.notification.isAppInFocus;
-        
-        if (coronaInitDone)
-            processNotificationOpened();
-    } settings:@{
-        @"kOSSettingsKeyAutoPrompt" : @(autoRegister)
+    [OneSignal promptForPushNotificationsWithUserResponse:^(BOOL accepted) {
+        // Optionally handle user response here
     }];
+     
 }
 
 
@@ -484,34 +506,20 @@ static void switchMethods(Class inClass, SEL oldSel, SEL newSel, IMP impl, const
 }
 
 + (void)load {
-    method_exchangeImplementations(class_getInstanceMethod(self, @selector(setDelegate:)), class_getInstanceMethod(self, @selector(setOneSignalCoronaDelegate:)));
+    /*method_exchangeImplementations(class_getInstanceMethod(self, @selector(setDelegate:)), class_getInstanceMethod(self, @selector(setOneSignalCoronaDelegate:))); */
 }
 
 - (void) setOneSignalCoronaDelegate:(id<UIApplicationDelegate>)delegate {
     static Class delegateClass = [delegate class];
 
     switchMethods(delegateClass, @selector(application:didFinishLaunchingWithOptions:),
-                  @selector(application:selectorDidFinishLaunchingWithOptions:), (IMP)didFinishLaunchingWithOptions_GTLocal, "v@:::");
+                  @selector(application:selectorDidFinishLaunchingWithOptions:), (IMP)didFinishLaunchingWithOptions_GTLocal, "B@:@@");
 
     [self setOneSignalCoronaDelegate:delegate];
 }
 
-BOOL didFinishLaunchingWithOptions_GTLocal(id self, SEL _cmd, id application, id launchOptions) {
+static BOOL didFinishLaunchingWithOptions_GTLocal(id self, SEL _cmd, id application, id launchOptions) {
     BOOL result = YES;
-
-    if ([self respondsToSelector:@selector(application:selectorDidFinishLaunchingWithOptions:)]) {
-        BOOL openedFromNotification = ([launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey] != nil);
-        if (openedFromNotification)
-            initOneSignalObject(launchOptions, nil, true);
-
-        if (![self application:application selectorDidFinishLaunchingWithOptions:launchOptions])
-            result = NO;
-    }
-    else {
-        [self applicationDidFinishLaunching:application];
-        result = YES;
-    }
-
     return result;
 }
 

@@ -140,7 +140,9 @@ int OneSignalLibrary::disableAutoRegister(lua_State* L) {
 }
 
 int OneSignalLibrary::registerForNotifications(lua_State* L) {
-    [OneSignal registerForPushNotifications];
+    [OneSignal promptForPushNotificationsWithUserResponse:^(BOOL accepted) {
+        // Optionally handle user response here
+    }];
     return 0;
 }
 
