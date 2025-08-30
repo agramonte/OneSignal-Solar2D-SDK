@@ -35,22 +35,9 @@
 
 @interface OneSignal ()
 
-+ (void)didRegisterForRemoteNotifications:(UIApplication*)app deviceToken:(NSData*)inDeviceToken;
-
-+ (void)handleDidFailRegisterForRemoteNotification:(NSError*)error;
-
-+ (void)updateNotificationTypes:(int)notificationTypes;
-
-+ (void)notificationReceived:(NSDictionary*)messageDict isActive:(BOOL)isActive wasOpened:(BOOL)opened;
-
-+ (void)handleNotificationOpened:(NSDictionary*)messageDict
-                        isActive:(BOOL)isActive
-                      actionType:(OSNotificationActionType)actionType
-                     displayType:(int)displayType;
-
-+ (BOOL)remoteSilentNotification:(UIApplication*)application UserInfo:(NSDictionary*)userInfo completionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
-
-+ (void)processLocalActionBasedNotification:(UILocalNotification*) notification identifier:(NSString*)identifier;
+// This file was used to declare private methods for an older version of the OneSignal SDK.
+// With the modern SDK, these methods have been removed, and this forwarding mechanism is obsolete.
+// The contents of this category can be safely removed.
 
 @end
 
