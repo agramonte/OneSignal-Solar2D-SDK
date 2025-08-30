@@ -171,6 +171,10 @@ OneSignalObject.SetEmail = function(email)
 	OneSignalNative.setEmail(email)
 end
 
+OneSignalObject.SetExternalUserId = function( externalUserId )
+    OneSignalNative.setExternalUserId( externalUserId )
+end
+
 OneSignalObject.PromptLocation = function()
 	OneSignalNative.promptLocation()
 end

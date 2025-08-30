@@ -44,7 +44,7 @@
 		A48EF7051724F3BA008DEB9B /* PluginTestAppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = A48EF7031724F3BA008DEB9B /* PluginTestAppDelegate.mm */; };
 		A49335C8174D339100134A6D /* CoronaResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = A49335C7174D339100134A6D /* CoronaResources.bundle */; };
 		A4E2537F166AE3DC00DCDC2C /* Twitter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4E2537E166AE3DC00DCDC2C /* Twitter.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		A4E253E5166DE7E000DCDC2C /* libplugin_GameThrivePushNotifications.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A4E253E2166DE7C800DCDC2C /* libplugin_GameThrivePushNotifications.a */; };
+		A4E253E5166DE7E000DCDC2C /* libplugin_OneSignal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A4E253E2166DE7C800DCDC2C /* libplugin_OneSignal.a */; };
 		A4F0615A16854336009C7C8F /* FacebookSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4F0615916854336009C7C8F /* FacebookSDK.framework */; };
 /* End PBXBuildFile section */
 
@@ -148,7 +148,7 @@
 				A4E2537F166AE3DC00DCDC2C /* Twitter.framework in Frameworks */,
 				A484111E15114F700074BD57 /* UIKit.framework in Frameworks */,
 				A447B67C16675195009EA762 /* libplayer.a in Frameworks */,
-				A4E253E5166DE7E000DCDC2C /* libplugin_GameThrivePushNotifications.a in Frameworks */,
+				A4E253E5166DE7E000DCDC2C /* libplugin_OneSignal.a in Frameworks */,
 				A4F0615A16854336009C7C8F /* FacebookSDK.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -269,7 +269,7 @@
 		A4E253DB166DE7C800DCDC2C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A4E253E2166DE7C800DCDC2C /* libplugin_GameThrivePushNotifications.a */,
+				A4E253E2166DE7C800DCDC2C /* libplugin_OneSignal.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -306,12 +306,18 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0420;
+				TargetAttributes = {
+					A484111815114F700074BD57 = {
+						DevelopmentTeam = 3WR32SC38C;
+					};
+				};
 			};
 			buildConfigurationList = A484111315114F700074BD57 /* Build configuration list for PBXProject "PluginTestApp" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = A484110E15114F700074BD57;
@@ -331,10 +337,10 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		A4E253E2166DE7C800DCDC2C /* libplugin_GameThrivePushNotifications.a */ = {
+		A4E253E2166DE7C800DCDC2C /* libplugin_OneSignal.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
-			path = libplugin_GameThrivePushNotifications.a;
+			path = libplugin_OneSignal.a;
 			remoteRef = A4E253E1166DE7C800DCDC2C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -498,7 +504,9 @@
 		A484114315114F700074BD57 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = 3WR32SC38C;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/CoronaEnterprise/Plugins/sdk-facebook/ios\"",
@@ -506,18 +514,23 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Prefix.pch;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				"GCC_THUMB_SUPPORT[arch=armv6]" = "";
 				INFOPLIST_FILE = "PluginTestApp-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/CoronaEnterprise/Corona/ios/lib\"",
 				);
 				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cabagomez.palabras;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -525,7 +538,9 @@
 		A484114415114F700074BD57 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = 3WR32SC38C;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/CoronaEnterprise/Plugins/sdk-facebook/ios\"",
@@ -533,18 +548,24 @@
 				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Prefix.pch;
-				"GCC_THUMB_SUPPORT[arch=armv6]" = "";
+				"GCC_THUMB_SUPPORT[sdk=iphone*][arch=armv6]" = "";
 				INFOPLIST_FILE = "PluginTestApp-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/CoronaEnterprise/Corona/ios/lib\"",
 				);
 				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cabagomez.palabras;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

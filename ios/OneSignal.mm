@@ -47,8 +47,23 @@ static const char* dictionaryToJsonChar(NSDictionary* dictionaryToConvert) {
 
 void processNotificationOpened();
 
+@interface NSObject (OneSignalSwizzled)
+// Declaring the swizzled method to prevent compiler warnings
+- (BOOL)onesignal_application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions;
+@end
+
 @interface UIApplication()
 void initOneSignalObject(NSDictionary* launchOptions, const char* appId, BOOL autoRegister);
+
+@end
+
+@interface OneSignalNotificationCenterDelegate: NSObject<UNUserNotificationCenterDelegate>
+@end
+@implementation OneSignalNotificationCenterDelegate
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler {
+    NSLog(@"Appdelegatewillpresentdelegate");
+}
 
 @end
 
@@ -276,7 +291,6 @@ int OneSignalLibrary::idsAvailable(lua_State* L) {
 }
 
 int OneSignalLibrary::setLogLevel(lua_State* L) {
-    NSLog(@"Corona setLogLevel");
     [OneSignal setLogLevel:(ONE_S_LOG_LEVEL)luaL_checkinteger(L, 1) visualLevel:(ONE_S_LOG_LEVEL)luaL_checkinteger(L, 2)];
     return 0;
 }
@@ -476,6 +490,7 @@ CORONA_EXPORT int luaopen_OneSignal(lua_State* L) {
     return OneSignalLibrary::Open(L);
 }
 
+
 // ----------- Object-c below -------------
 
 @implementation UIApplication(OneSignalCoronaPush)
@@ -484,18 +499,16 @@ static NSString* mAlertMessage;
 static NSDictionary* mAdditionalData;
 static BOOL mIsActive;
 
-// Set up the foreground notification handler after OneSignal initialization
 void initOneSignalObject(NSDictionary* launchOptions, const char* appId, BOOL autoRegister) {
     NSString* appIdStr = (appId ? [NSString stringWithUTF8String: appId] : nil);
 
     [OneSignal setMSDKType:@"Corona-Unoffical"];
-    [OneSignal setAppId:appIdStr];
-    [OneSignal initWithLaunchOptions:launchOptions];
-    
-    [OneSignal promptForPushNotificationsWithUserResponse:^(BOOL accepted) {
-        // Optionally handle user response here
-    }];
-     
+        [OneSignal setAppId:appIdStr];
+        [OneSignal initWithLaunchOptions:launchOptions];
+        
+        [OneSignal promptForPushNotificationsWithUserResponse:^(BOOL accepted) {
+            // Optionally handle user response here
+        }];
 }
 
 
@@ -506,20 +519,32 @@ static void switchMethods(Class inClass, SEL oldSel, SEL newSel, IMP impl, const
 }
 
 + (void)load {
-    /*method_exchangeImplementations(class_getInstanceMethod(self, @selector(setDelegate:)), class_getInstanceMethod(self, @selector(setOneSignalCoronaDelegate:))); */
+    method_exchangeImplementations(class_getInstanceMethod(self, @selector(setDelegate:)), class_getInstanceMethod(self, @selector(setOneSignalCoronaDelegate:)));
 }
 
 - (void) setOneSignalCoronaDelegate:(id<UIApplicationDelegate>)delegate {
     static Class delegateClass = [delegate class];
 
     switchMethods(delegateClass, @selector(application:didFinishLaunchingWithOptions:),
-                  @selector(application:selectorDidFinishLaunchingWithOptions:), (IMP)didFinishLaunchingWithOptions_GTLocal, "B@:@@");
+                  @selector(onesignal_application:didFinishLaunchingWithOptions:), (IMP)didFinishLaunchingWithOptions_GTLocal, "c@:@@");
 
     [self setOneSignalCoronaDelegate:delegate];
 }
 
-static BOOL didFinishLaunchingWithOptions_GTLocal(id self, SEL _cmd, id application, id launchOptions) {
+BOOL didFinishLaunchingWithOptions_GTLocal(id self, SEL _cmd, id application, id launchOptions) {
     BOOL result = YES;
+
+    if ([self respondsToSelector:@selector(onesignal_application:didFinishLaunchingWithOptions:)]) {
+        BOOL openedFromNotification = ([launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey] != nil);
+        if (openedFromNotification)
+            initOneSignalObject(launchOptions, nil, true);
+
+        result = [self onesignal_application:application didFinishLaunchingWithOptions:launchOptions];
+    }
+    else if ([self respondsToSelector:@selector(applicationDidFinishLaunching:)]) {
+        [self performSelector:@selector(applicationDidFinishLaunching:) withObject:application];
+        result = YES;
+    }
     return result;
 }
 
