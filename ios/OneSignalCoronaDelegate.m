@@ -2,8 +2,31 @@
 #import "OneSignal.h"
 #import "OneSignalCoronaDelegate.h"
 #import "OneSignalHelper.h"
+#import <objc/runtime.h>
 
-@implementation OneSignalCoronaDelegate : NSObject 
+@implementation OneSignalCoronaDelegate : NSObject
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(nullable NSDictionary<UIApplicationLaunchOptionsKey, id> *)launchOptions {
+    
+    // Dynamically add oneSignalApplicationWillTerminate: to CoronaAppDelegate if missing
+    Class coronaDelegateClass = NSClassFromString(@"CoronaAppDelegate");
+    SEL selector = @selector(oneSignalApplicationWillTerminate:);
+    if (coronaDelegateClass && !class_getInstanceMethod(coronaDelegateClass, selector)) {
+        class_addMethod(
+            coronaDelegateClass,
+            selector,
+            (IMP)oneSignalApplicationWillTerminateDynamic,
+            "v@:@"
+        );
+    }
+
+    return true;
+}
+
+// The dynamic implementation (can be static or global)
+static void oneSignalApplicationWillTerminateDynamic(id self, SEL _cmd, UIApplication *application) {
+    // No-op or add logging if you want
+}
 
 - (void)applicationWillResignActive:(UIApplication*)application {
     [OneSignalLog onesignalLog:ONE_S_LL_VERBOSE message:@"applicationWillResignActive:application"];
@@ -15,6 +38,7 @@
     [OneSignalLog onesignalLog:ONE_S_LL_VERBOSE message:@"applicationDidBecomeActive:application"];
     
     if ([OneSignal appId]) {
+        
     }
 }
 
@@ -24,9 +48,6 @@
     if ([OneSignal appId]) {
         
     }
-        // The modern OneSignal SDK automatically handles this via method swizzling.
-        // This call is to a removed private API and would cause a crash.
-        // [OneSignal didRegisterForRemoteNotifications:app deviceToken:inDeviceToken];
 }
 
 - (void)application:(UIApplication*)app didFailToRegisterForRemoteNotificationsWithError:(NSError*)err {
@@ -35,9 +56,7 @@
     if ([OneSignal appId]) {
         
     }
-        // The modern OneSignal SDK automatically handles this via method swizzling.
-        // This call is to a removed private API and would cause a crash.
-        // [OneSignal handleDidFailRegisterForRemoteNotification:err];
+        
 }
 
 - (void)application:(UIApplication*)app didRegisterUserNotificationSettings:(UIUserNotificationSettings*)notificationSettings {
@@ -68,10 +87,7 @@
     {
         
     }
-        // The modern OneSignal SDK automatically handles this via method swizzling.
-        // Manually forwarding this call is not necessary and the method does not exist on the OneSignal class.
-        // The SDK's swizzled method will call the completionHandler.
-        // [OneSignal didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
+       
 }
 
 - (void)application:(UIApplication*)app handleActionWithIdentifier:(NSString*)identifier forLocalNotification:(UILocalNotification*)notification completionHandler:(void(^)()) completionHandler {
@@ -89,6 +105,7 @@
     // This call is to a removed private API and would cause a crash.
     // [OneSignal processLocalActionBasedNotification:notification identifier:@"__DEFAULT__"];
 }
+
 
 - (void)willLoadMain:(id<CoronaRuntime>)runtime {}
 - (void)didLoadMain:(id<CoronaRuntime>)runtime {}
